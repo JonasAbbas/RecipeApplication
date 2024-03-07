@@ -1,0 +1,308 @@
+﻿@using Microsoft.Extensions.Configuration.Json
+@using RecipeApplication.Shared.Models
+@using Microsoft.AspNetCore.Components.Web
+@using System.Net
+@using System.Text.Json;
+@using Newtonsoft.Json;
+@using RecipeApplication.Client.Pages;
+@using System.Web;
+@using System.Data.Common;
+@using System.Data.SqlClient;
+@using Blazored.Typeahead
+@inject NavigationManager Navigation
+
+<div class="container mt-3">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="input-group">
+                <MudAutocomplete T="string" Label="Search Recipe" @bind-Value="Model.Input" SearchFunc="@SearchMeals"
+                                 ResetValueOnEmptyText="false"
+                                 CoerceText="false" CoerceValue="true" SelectValueOnTab="true" />
+                <div class="input-group-append">
+                    <button style="background-color: #61745d;" class="btn btn-secondary" type="button" @onclick="GetRecipeOutput">Search</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container mt-3">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <InputSelect TValue="Category" class="btn btn-light" @bind-Value="SelectedFilterCategory" @bind-Value:after="FilterByCategory">
+                <optgroup label="Category">
+                    <option value="@Category.None" disabled selected hidden>Category</option>
+                    @foreach (Category category in Enum.GetValues<Category>())
+                    {
+                        <option class="btn btn-light" value="@category">@category.ToString()</option>
+                    }
+                </optgroup>
+            </InputSelect>
+            <InputSelect TValue="Area" class="btn btn-light" @bind-Value="SelectedFilterArea" @bind-Value:after="FilterByArea">
+                <optgroup label="Area">
+                    <option value="@Area.None" disabled selected hidden>Area</option>
+                    @foreach (Area area in Enum.GetValues<Area>())
+                    {
+                        <option class="btn btn-light" value="@area">@area.ToString()</option>
+                    }
+                </optgroup>
+            </InputSelect>
+        </div>
+    </div>
+</div>
+<hr>
+
+@if (Meals != null && Meals.Any())
+{
+    var showMeals = Meals;
+    if (FilteredMeals != null)
+    {
+        showMeals = FilteredMeals.ToList();
+    }
+    if (!string.IsNullOrEmpty(Model.Input))
+    {
+        showMeals = Meals.Where(x => x.StrMeal.ToLower().StartsWith(Model.Input.ToLower())).ToList();
+    }
+    <article>
+        <div class="recipe-list">
+
+            @foreach (var meal in showMeals)
+            {
+                <div class="recipe-card">
+                    <img src="@meal.StrMealThumb" alt="Aleq" />
+                    <div class="recipe-details">
+                        <h3><a style="color:white;" href="/RecipeDetails/@meal.IdMeal">@meal.StrMeal</a></h3>
+                        <p>
+                            @meal.StrCategory
+                        </p>
+                        <p>
+                            @meal.StrArea
+                        </p>
+                        @if (FavoritesList.Any(x => x.IdMeal == meal.IdMeal))                           //Buttons zum favorisieren
+                        {
+                            <button class="oi oi-star" style="border-radius: 4px; background-color:black; color: #6ede55; border: 1px solid black;" @onclick="@(() => RemoveFromFavorites(meal))"></button>
+                        }
+                        else
+                        {
+                            <button class="oi oi-star" style="border-radius: 4px; background-color:white; color: black; border: 1px solid black;" @onclick="@(() => AddToFavorites(meal))"></button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </article>
+}
+else
+{
+    <p class="loading-text">No recipes found.</p>
+}
+
+@code {
+    [Inject]
+    public HttpClient? Client { get; init; }
+
+    [Parameter]
+    public RecipeAppModel? Model { get; set; }
+
+    [Parameter]
+    public EventCallback<RecipeAppModel> ModelChanged { get; set; }
+
+    public RecipeAppModel? RecipeModel { get; set; } = new RecipeAppModel();
+
+    public Favorites? FavoriteRecipeModel { get; set; } = new Favorites();
+
+    public List<Meal>? Meals { get; set; }
+
+    public List<Favorites>? FavoritesList { get; set; } = new List<Favorites>();
+
+    private IEnumerable<Meal>? FilteredMeals;
+
+    private List<Meal>? meals;
+
+    private Meal? selecetedMeals { get; set; }
+
+    private Area _selectedFilterArea = Area.None;
+
+    private Area SelectedFilterArea
+    {
+        get
+        {
+            return _selectedFilterArea;
+        }
+        set
+        {
+            _selectedFilterArea = value;
+
+            if (_selectedFilterArea != Area.None)
+            {
+                _selectedFilterCategory = Category.None;
+            }
+        }
+    }
+
+    private Category _selectedFilterCategory = Category.None;
+
+    private Category SelectedFilterCategory
+    {
+        get
+        {
+            return _selectedFilterCategory;
+        }
+        set
+        {
+            _selectedFilterCategory = value;
+
+            if (_selectedFilterCategory != Category.None)
+            {
+                _selectedFilterArea = Area.None;
+            }
+        }
+    }
+
+    public async Task FilterByCategory()
+    {
+        if (SelectedFilterCategory != Category.None)
+        {
+            string apiUrl = $"https://www.themealdb.com/api/json/v1/1/filter.php?c={SelectedFilterCategory.ToString()}";
+            await GetMeals(apiUrl);
+        }
+        else
+        {
+            await GetRecipeOutput();
+        }
+    }
+
+    public async Task FilterByArea()
+    {
+        if (SelectedFilterArea != Area.None)
+        {
+            string apiUrl = $"https://www.themealdb.com/api/json/v1/1/filter.php?a={SelectedFilterArea.ToString()}";
+            await GetMeals(apiUrl);
+        }
+        else
+        {
+            await GetRecipeOutput();
+        }
+    }
+
+    public enum Category
+    {
+        Dessert = 1,
+        Pasta = 2,
+        Pork = 3,
+        Chicken = 4,
+        Seafood = 5,
+        Beef = 6,
+        Side = 7,
+        Vegetarian = 8,
+        None = 0
+    }
+
+    public enum Area
+    {
+        Filipino = 1,
+        British = 2,
+        Chinese = 3,
+        Dutch = 4,
+        Turkish = 5,
+        Indian = 6,
+        Greek = 7,
+        Canadian = 8,
+        Amarican = 9,
+        Croatian = 10,
+        Egyptan = 11,
+        Tunasian = 12,
+        French = 13,
+        Italian = 14,
+        Vietnamese = 15,
+        Japanese = 16,
+        None = 0
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetRecipeOutput();
+        await GetFavorites();
+    }
+
+    private async Task<IEnumerable<string>> SearchMeals(string searchText)
+    {
+        Console.WriteLine(searchText);
+        HttpResponseMessage response = await Client.GetAsync($"https://www.themealdb.com/api/json/v1/1/search.php?s=" + HttpUtility.UrlEncode(searchText));
+
+        response.EnsureSuccessStatusCode();
+        string responseBody = await response.Content.ReadAsStringAsync();
+
+        var jsonOutput = JsonConvert.DeserializeObject<MealCollection>(responseBody);
+
+        Meals = jsonOutput!.Meals ?? new List<Meal>();
+
+        return Meals.Take(30).Select(m => m.StrMeal);
+    }
+
+    public async Task GetRecipeOutput()
+    {
+        HttpResponseMessage response = await Client.GetAsync($"https://www.themealdb.com/api/json/v1/1/search.php?s=" + HttpUtility.UrlEncode(Model?.Input));
+
+        response.EnsureSuccessStatusCode();
+        string responseBody = await response.Content.ReadAsStringAsync();
+
+        var jsonOutput = JsonConvert.DeserializeObject<MealCollection>(responseBody);
+
+        Meals = jsonOutput?.Meals;
+    }
+
+    private async Task GetMeals(string apiUrl)
+    {
+        HttpResponseMessage response = await Client.GetAsync(apiUrl);
+
+        response.EnsureSuccessStatusCode();
+        string responseBody = await response.Content.ReadAsStringAsync();
+
+        var jsonOutput = JsonConvert.DeserializeObject<MealCollection>(responseBody);
+
+        Meals = jsonOutput?.Meals;
+    }
+
+    public async Task GetFavorites()
+    {
+        HttpResponseMessage favoritesresponse = await Client.GetAsync("/api/Favorites");
+
+        if (favoritesresponse.IsSuccessStatusCode)
+        {
+            var favoritesresponseBody = await favoritesresponse.Content.ReadAsStringAsync();
+
+            FavoritesList?.AddRange(JsonConvert.DeserializeObject<List<Favorites>>(favoritesresponseBody));
+        }
+    }
+
+    public async Task AddToFavorites(Meal meal)
+    {
+        // System.Diagnostics.Debugger.Break();
+        var favorite = await Client.PostAsJsonAsync("/api/Favorites", new Favorites
+            {
+                IdMeal = meal.IdMeal,
+                StrArea = meal.StrArea,
+                StrCategory = meal.StrCategory,
+                StrInstructions = meal.StrInstructions,
+                StrMeal = meal.StrMeal,
+                StrMealThumb = meal.StrMealThumb
+            });
+        if (favorite.IsSuccessStatusCode)
+        {
+            var favoriteItem = await favorite.Content.ReadFromJsonAsync<Favorites>();
+            FavoritesList?.Add(favoriteItem!);
+        }
+    }
+
+    public async Task RemoveFromFavorites(Meal meal)
+    {
+        var favorite = FavoritesList?.First(x => x.IdMeal == meal.IdMeal);
+        await Client.DeleteAsync($"/api/Favorites/{favorite?.IdDBMeal}");
+        FavoritesList?.Remove(favorite);
+    }
+}
+
+
+
+
+

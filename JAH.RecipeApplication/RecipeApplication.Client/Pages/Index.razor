@@ -1,0 +1,12 @@
+﻿@page "/"
+@inject NavigationManager Navigation
+<PageTitle>Recipe App</PageTitle>
+
+
+@code {
+
+    protected override async Task OnInitializedAsync()
+    {
+        Navigation.NavigateTo("/RecipeApp");
+    }
+}

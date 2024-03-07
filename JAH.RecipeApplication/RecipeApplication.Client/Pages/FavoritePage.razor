@@ -1,0 +1,144 @@
+﻿@using Microsoft.Extensions.Configuration.Json
+@using RecipeApplication.Shared.Models
+@using System.Net
+@using System.Text.Json;
+@using RecipeApplication.Client.Pages
+@using Newtonsoft.Json;
+@using System.Web;
+@using System.Data.Common;
+@using System.Threading.Tasks;
+@using System.Data.SqlClient;
+
+@inject HttpClient Http;
+@inject NavigationManager Navigation
+
+@page "/Favorites"
+<p></p>
+<h1>Favorite Recipes</h1>
+<hr>
+<p></p>
+
+<div class="container mt-3">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="input-group">
+                <input type="text" class="form-control" @bind="searchQuery" placeholder="Search by recipe name" />
+                <div>
+                    <button style="background-color: #61745d;" class="btn btn-secondary" type="button" @onclick="Search">Search</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<br/>
+
+@if (FavoritesList != null && FavoritesList.Any())
+{
+    <article>
+        <div class="recipe-list">
+            @foreach (var meal in FavoritesList)
+            {
+                <div class="recipe-card">
+
+                    <img src="@meal.StrMealThumb" width="200" alt="Aleq" />
+
+                    <div class="recipe-details">
+
+                        <h3> <a style="color: white;" href="/RecipeDetails/@meal.IdMeal">@meal.StrMeal</a></h3>
+                        <p>
+                            @meal.StrCategory
+                        </p>
+                        <p>
+                            @meal.StrArea
+                        </p>
+                        @if (FavoritesList.Any(x => x.IdMeal == meal.IdMeal))
+                        {
+                            <button class="oi oi-star" style="border-radius: 4px; background-color:black; color: #6ede55; border: 1px solid black;" @onclick="@(() => RemoveFromFavorites(meal))"></button>
+                        }
+                        else
+                        {
+                            <button class="oi oi-star" style="border-radius: 4px; background-color:white; color: black; border: 1px solid black;" @onclick="@(() => AddToFavorites(meal))"></button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </article>
+}
+else
+{
+    <p style="text-align:center; color:gray;">No Favorites yet</p>
+}
+
+@code {
+    [Inject]
+    public HttpClient? Client { get; init; }
+
+    public List<Favorites>? FavoritesList { get; set; }
+
+    [Parameter]
+    public RecipeAppModel? Model { get; set; }
+
+    public Favorites FavoriteRecipeModel { get; set; } = new Favorites();
+
+    string searchQuery = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var result = await Http.GetFromJsonAsync<List<Favorites>>("/api/Favorites");
+            if (result != null)
+                FavoritesList = result;
+        }
+        catch (Exception)
+        {
+            FavoritesList = null;
+        }
+    }
+
+    public void GoToFavoriteDetailPage()
+    {
+        Navigation.NavigateTo("/FavoriteDetails");
+    }
+
+    public void RemoveFromFavorites(Favorites meal)
+    {
+        Client?.DeleteAsync($"/api/Favorites/{meal.IdDBMeal}");
+        FavoritesList?.Remove(meal);
+    }
+
+    public async Task AddToFavorites(Favorites meal)
+    {
+
+        var favorite = await Client.PostAsJsonAsync("/api/Favorites", new Favorites
+            {
+                IdMeal = meal.IdMeal,
+                StrArea = meal.StrArea,
+                StrCategory = meal.StrCategory,
+                StrInstructions = meal.StrInstructions,
+                StrMeal = meal.StrMeal,
+                StrMealThumb = meal.StrMealThumb
+            });
+        if (favorite.IsSuccessStatusCode)
+        {
+            var favoriteItem = await favorite.Content.ReadFromJsonAsync<Favorites>();
+            FavoritesList.Add(favoriteItem!);
+        }
+    }
+
+    public void Search()
+    {
+        if (string.IsNullOrEmpty(searchQuery))
+        {
+            FavoritesList = FavoritesList;
+        }
+        else
+        {
+            FavoritesList = FavoritesList?
+                .Where(x => x.StrMeal.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
+}

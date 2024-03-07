@@ -1,0 +1,118 @@
+﻿@using Microsoft.Extensions.Configuration.Json
+@using RecipeApplication.Shared.Models
+@using Microsoft.AspNetCore.Components.Web
+@using System.Net
+@using System.Text.Json;
+@using Newtonsoft.Json;
+@using RecipeApplication.Client.Pages;
+@using System.Web;
+@using System.Data.Common;
+@using System.Data.SqlClient;
+@using Blazored.Typeahead;
+
+@inject NavigationManager Navigation
+
+<thead>
+    <tr>
+        <th scope="col">Ingredient</th>
+        <th scope="col">Measure</th>
+    </tr>
+</thead>
+<tbody>
+    @if (!string.IsNullOrWhiteSpace(Model?.StrIngredient1))
+    {
+        <tr><td>@Model.StrIngredient1</td><td>@Model.StrMeasure1</td></tr>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model?.StrIngredient2))
+    {
+        <tr><td>@Model.StrIngredient2</td><td>@Model.StrMeasure2</td></tr>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model?.StrIngredient3))
+    {
+        <tr><td>@Model.StrIngredient3</td><td>@Model.StrMeasure3</td></tr>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model?.StrIngredient4))
+    {
+        <tr><td>@Model.StrIngredient4</td><td>@Model.StrMeasure4</td></tr>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model?.StrIngredient5))
+    {
+        <tr><td>@Model.StrIngredient5</td><td>@Model.StrMeasure5</td></tr>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model?.StrIngredient6))
+    {
+        <tr><td>@Model.StrIngredient6</td><td>@Model.StrMeasure6</td></tr>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model?.StrIngredient7))
+    {
+        <tr><td>@Model.StrIngredient7</td><td>@Model.StrMeasure7</td></tr>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model?.StrIngredient8))
+    {
+        <tr><td>@Model.StrIngredient8</td><td>@Model.StrMeasure8</td></tr>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model?.StrIngredient9))
+    {
+        <tr><td>@Model.StrIngredient9</td><td>@Model.StrMeasure9</td></tr>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model?.StrIngredient10))
+    {
+        <tr><td>@Model.StrIngredient10</td><td>@Model.StrMeasure10</td></tr>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model?.StrIngredient11))
+    {
+        <tr><td>@Model.StrIngredient11</td><td>@Model.StrMeasure12</td></tr>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model?.StrIngredient12))
+    {
+        <tr><td>@Model.StrIngredient12</td><td>@Model.StrMeasure13</td></tr>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model?.StrIngredient13))
+    {
+        <tr><td>@Model.StrIngredient13</td><td>@Model.StrMeasure13</td></tr>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model?.StrIngredient14))
+    {
+        <tr><td>@Model.StrIngredient14</td><td>@Model.StrMeasure14</td></tr>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model?.StrIngredient15))
+    {
+        <tr><td>@Model.StrIngredient15</td><td>@Model.StrMeasure15</td></tr>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model?.StrIngredient16))
+    {
+        <tr><td>@Model.StrIngredient16</td><td>@Model.StrMeasure16</td></tr>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model?.StrIngredient17))
+    {
+        <tr><td>@Model.StrIngredient17</td><td>@Model.StrMeasure17</td></tr>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model?.StrIngredient18))
+    {
+        <tr><td>@Model.StrIngredient18</td><td>@Model.StrMeasure18</td></tr>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model?.StrIngredient19))
+    {
+        <tr><td>@Model.StrIngredient19</td><td>@Model.StrMeasure19</td></tr>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model?.StrIngredient20))
+    {
+        <tr><td>@Model.StrIngredient20</td><td>@Model.StrMeasure20</td></tr>
+    }
+
+</tbody>
+
+@code {
+    [Inject]
+    public HttpClient? Client { get; init; }
+
+    [Parameter]
+    public Meal? Model { get; set; }
+
+    [Parameter]
+    public EventCallback<RecipeAppModel> ModelChanged { get; set; }
+
+
+    public List<Meal>? Meals { get; set; }
+
+}

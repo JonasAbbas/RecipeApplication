@@ -1,0 +1,24 @@
+﻿@using Newtonsoft.Json;
+@using RecipeApplication.Shared.Models
+@using RecipeApplication.Client.Pages
+@using Microsoft.Extensions.Configuration.Json
+@using System.Web;
+@inject NavigationManager Navigation
+@page "/RecipeApp"
+
+<h1><big>Recipe App</big></h1>
+<hr>
+<p> </p>
+
+<div>
+    <RecipeOutputGetting Model="RecipeModel" />
+</div>
+
+@code {
+    public RecipeAppModel RecipeModel { get; set; } = new RecipeAppModel();
+
+    public void GoToFavoritePage()
+    {
+        Navigation.NavigateTo("/Favorites");
+    }
+}

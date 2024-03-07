@@ -1,0 +1,80 @@
+﻿@if (!@IconMenuActive)
+{
+    <div class="top-row ps-3 navbar navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="">Recipe App</a>
+            <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+    </div>
+}
+<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="RecipeApp">
+                <span class="oi oi-home" aria-hidden="true"></span>
+                @if (!@IconMenuActive)
+                {
+                    <label>Recipe App</label>
+                }
+            </NavLink>
+        </div>*
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="Favorites">
+                <span class="oi oi-star" aria-hidden="true"></span>
+                @if (!@IconMenuActive)
+                {
+                    <label>Favorites</label>
+                }
+            </NavLink>
+        </div>*
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" style="pointer-events: none; cursor: default; color: gray;" href="ShoppingList">
+                <span class="oi oi-cart" aria-hidden="true"></span>
+                @if (!@IconMenuActive)
+                {
+                    <label>Shopping List</label>
+                }
+            </NavLink>
+        </div>
+    </nav>
+</div>
+
+<div class="bottom-row">
+    <div class="icon-menu-arrow">
+        @if (!@IconMenuActive)
+        {
+            <span class="oi oi-arrow-left" style="color: white;" @onclick="ToggleIconMenu"></span>
+        }
+        else
+        {
+            <span class="oi oi-arrow-right" style="color: white;" @onclick="ToggleIconMenu"></span>
+        }
+    </div>
+</div>
+
+@code {
+    //bool to send to MainLayout for shrinking sidebar and showing/hide menu text
+    private bool IconMenuActive { get; set; } = false;
+
+    //EventCallback for sending bool to MainLayout
+    [Parameter]
+    public EventCallback<bool> ShowIconMenu { get; set; }
+
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    //Method to toggle IconMenuActive bool and send bool via EventCallback
+    private async Task ToggleIconMenu()
+    {
+        IconMenuActive = !IconMenuActive;
+        await ShowIconMenu.InvokeAsync(IconMenuActive);
+    }
+}

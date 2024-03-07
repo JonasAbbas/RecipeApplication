@@ -1,0 +1,165 @@
+﻿@using RecipeApplication.Client.Pages
+@using RecipeApplication.Shared.Models
+@using Newtonsoft.Json;
+@using Microsoft.Extensions.Configuration.Json
+@page "/FavoriteDetails/{MealID:int}"
+
+
+
+
+@if (Model != null)
+{
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <img src="@Model.StrMealThumb" class="card-img-top" alt="Meal Image" />
+                    <div class="card-body">
+                        <h1 class="card-title">@Model.StrMeal</h1>
+                        <p class="card-text"><b>Meal-ID:</b> @Model.IdMeal</p>
+                        <p class="card-text"><b>Category:</b> @Model.StrCategory</p>
+                        <p class="card-text"><b>Area:</b> @Model.StrArea</p>
+                        @if (Model.StrTags != null)
+                        {
+                            <p class="card-text"><b>Tags:</b> @Model.StrTags</p>
+                        }
+                        <a href="@Model.StrYoutube" class="btn btn-primary">Watch Video</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h3 class="card-title">Ingredients</h3>
+                        <table class="table">
+                            <Ingredients Model="Model" />
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h3 class="card-title">Instructions</h3>
+                            <ul class="list-group list-group-flush">
+                                @if (!string.IsNullOrEmpty(Model.StrInstructions))
+                                {
+                                    var sentences = Model.StrInstructions.Split(new[] { ".", "!" }, StringSplitOptions.RemoveEmptyEntries);
+                                    foreach (var sentence in sentences)
+                                    {
+                                        <li class="list-group-item"> @sentence.Trim()</li>
+                                    }
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h3 class="card-title">Your Favorites</h3>
+                        @if (FavoritesList != null && FavoritesList.Any())
+                        {
+                            <div class="recipe-list">
+                                @foreach (var meal in FavoritesList)
+                                {
+                                    <div class="recipe-card mb-3">
+                                        <img src="@meal.StrMealThumb" alt="Aleq" class="img-fluid" />
+                                        <div class="recipe-details">
+                                            <h3 class="mt-2"><a href="/RecipeDetails/@meal.IdMeal">@meal.StrMeal</a></h3>
+                                            <p>@meal.StrCategory</p>
+                                            <p>@meal.StrArea</p>
+                                            @if (FavoritesList.Any(x => x.IdMeal == meal.IdMeal))
+                                            {
+                                                <button class="oi oi-star" style="border-radius: 4px; background-color: black; color: #6ede55; border: 1px solid black;" @onclick="@(() => RemoveFromFavorites(meal))"></button>
+                                            }
+                                            else
+                                            {
+                                                <button class="oi oi-star" style="border-radius: 4px;background-color: white;color: black;border: 1px solid black;" @onclick="@(() => AddToFavorites(meal))"></button>
+
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="loading-text">No Favorites yet</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+else
+{
+    <p class="loading-text text-center">Loading...</p>
+}
+@code {
+
+    [Inject]
+    public HttpClient? Client { get; init; }
+
+    [Parameter]
+    public int MealID { get; set; }
+
+    public Meal? Model { get; set; }
+
+    public List<Favorites>? FavoritesList { get; set; }
+
+    public Favorites FavoriteRecipeModel { get; set; } = new Favorites();
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (MealID == 0)
+        {
+            Model = null;
+        }
+
+        if (Model == null || Model.IdMeal != MealID.ToString())
+        {
+            HttpResponseMessage response = await Client.GetAsync($"https://www.themealdb.com/api/json/v1/1/lookup.php?i={MealID}");                //Der Code verwendet "HttpClient" und erwartet von der API eine JSON-Antwort und speichert diesen in responseBody.
+
+            response.EnsureSuccessStatusCode();
+            string responseBody = await response.Content.ReadAsStringAsync();
+
+            var jsonOutput = JsonConvert.DeserializeObject<MealCollection>(responseBody);       //Der JSON-Text wird in ein C#-Objekt umgewandelt
+
+            Model = jsonOutput?.Meals?.SingleOrDefault();           //Wenn die API-Antwort nicht erfolgreich ist oder keine passenden Daten enthält, bleibt "Model" unverändert
+        }
+    }
+
+    public void RemoveFromFavorites(Favorites meal)
+    {
+        Client?.DeleteAsync($"/api/Favorites/{meal.IdDBMeal}");
+        FavoritesList?.Remove(meal);
+    }
+
+    public async Task AddToFavorites(Favorites meal)
+    {
+        // System.Diagnostics.Debugger.Break();
+        var favorite = await Client.PostAsJsonAsync("/api/Favorites", new Favorites
+            {
+                IdMeal = meal.IdMeal,
+                StrArea = meal.StrArea,
+                StrCategory = meal.StrCategory,
+                StrInstructions = meal.StrInstructions,
+                StrMeal = meal.StrMeal,
+                StrMealThumb = meal.StrMealThumb
+            });
+
+        if (favorite.IsSuccessStatusCode)
+        {
+            var favoriteItem = await favorite.Content.ReadFromJsonAsync<Favorites>();
+            FavoritesList?.Add(favoriteItem!);
+        }
+    }
+}
